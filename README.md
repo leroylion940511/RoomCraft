@@ -57,7 +57,7 @@
 
 ```bash
 # Clone 此專案
-git clone [https://github.com/leroylion940511/RoomCraft.git](https://github.com/leroylion940511/RoomCraft.git)
+git clone https://github.com/leroylion940511/RoomCraft.git
 
 # 進入前端目錄
 cd RoomCraft/frontend
