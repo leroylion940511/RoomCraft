@@ -57,7 +57,7 @@
 
 ```bash
 # Clone 此專案
-git clone [https://github.com/你的帳號/RoomCraft.git](https://github.com/你的帳號/RoomCraft.git)
+git clone [https://github.com/leroylion940511/RoomCraft.git](https://github.com/leroylion940511/RoomCraft.git)
 
 # 進入前端目錄
 cd RoomCraft/frontend
@@ -67,10 +67,15 @@ npm install
 
 # 啟動開發伺服器
 npm run dev
+```
 
 啟動後，請打開瀏覽器訪問 http://localhost:5173 即可看到畫面。
 
-📂 專案結構 (Project Structure)
+---
+
+## 📂 專案結構 (Project Structure)
+
+```text
 Plaintext
 RoomCraft/
 ├── frontend/               # React 前端應用
@@ -87,25 +92,31 @@ RoomCraft/
 │   └── package.json
 ├── backend/                # Python 後端 (建置中)
 └── README.md
-🗺️ 開發路線圖 (Roadmap)
-[x] MVP 核心：環境建置、2D/3D 同步、基礎拖曳。
+```
 
-[x] UI 優化：側邊欄目錄、網格系統、方位標示。
+---
 
-[ ] 進階互動：
+## 🗺️ 開發路線圖 (Roadmap)
+- [x] **MVP 核心**：環境建置、2D/3D 同步、基礎拖曳。
 
-[ ] 傢俱旋轉功能 (Rotation)。
+- [x] **UI 優化**：側邊欄目錄、網格系統、方位標示。
 
-[ ] 碰撞偵測 (防止傢俱重疊)。
+- [ ] **進階互動**：
 
-[ ] 視覺升級：
+    - [ ] 傢俱旋轉功能 (Rotation)。
 
-[ ] 引入 GLTF/GLB 真實 3D 模型。
+    - [ ] 碰撞偵測 (防止傢俱重疊)。
 
-[ ] PBR 材質與光影優化。
+- [ ] **視覺升級**：
 
-[ ] 後端整合：
+    - [ ] 引入 GLTF/GLB 真實 3D 模型。
 
-[ ] 連接 Python FastAPI。
+    - [ ] PBR 材質與光影優化。
 
-[ ] 實作專案存檔/讀取 (Save/Load) 功能。
+- [ ] **後端整合**：
+
+    - [ ] 連接 Python FastAPI。
+
+    - [ ] 實作專案存檔/讀取 (Save/Load) 功能。
+
+---
