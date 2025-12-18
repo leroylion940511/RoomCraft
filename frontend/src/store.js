@@ -11,7 +11,6 @@ const useStore = create((set) => ({
     ),
   })),
   
-  // 1. 新增：更新旋轉角度
   updateFurnitureRotation: (id, newRotation) => set((state) => ({
     furniture: state.furniture.map((item) =>
       item.id === id ? { ...item, rotation: newRotation } : item
@@ -29,8 +28,11 @@ const useStore = create((set) => ({
         {
           id: Math.random().toString(36).substr(2, 9),
           position: [0, height / 2, 0], 
-          rotation: 0, // 2. 新增：預設角度為 0
-          ...itemConfig, 
+          rotation: 0,
+          ...itemConfig,
+          // 1. 新增：模型路徑
+          // 如果傳入的 config 有 modelUrl 就用，沒有就 undefined (會變回方塊)
+          modelUrl: itemConfig.modelUrl,
           dimensions: dims,
         }
       ]
