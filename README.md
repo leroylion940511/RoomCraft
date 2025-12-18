@@ -103,7 +103,7 @@ RoomCraft/
 
 - [ ] **進階互動**：
 
-    - [ ] 傢俱旋轉功能 (Rotation)。
+    - [x] 傢俱旋轉功能 (Rotation)。
 
     - [ ] 碰撞偵測 (防止傢俱重疊)。
 
@@ -115,7 +115,7 @@ RoomCraft/
 
 - [ ] **後端整合**：
 
-    - [ ] 連接 Python FastAPI。
+    - [x] 連接 Python FastAPI。
 
     - [ ] 實作專案存檔/讀取 (Save/Load) 功能。
 
