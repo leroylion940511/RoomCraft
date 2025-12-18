@@ -8,6 +8,8 @@ export default function Editor2D() {
   const furnitureList = useStore((state) => state.furniture)
   const roomDim = useStore((state) => state.roomDimensions)
   const updatePos = useStore((state) => state.updateFurniturePosition)
+  // 1. 新增：引入旋轉動作
+  const updateRot = useStore((state) => state.updateFurnitureRotation)
 
   const STAGE_WIDTH = 600
   const STAGE_HEIGHT = 600
@@ -52,7 +54,6 @@ export default function Editor2D() {
     <div style={{ width: "100%", height: "100%", background: "#333", overflow: "hidden" }}>
       <Stage width={STAGE_WIDTH} height={STAGE_HEIGHT}>
         <Layer>
-          {/* 房間主容器 */}
           <Group x={CENTER_X} y={CENTER_Y}>
             
             <Rect
@@ -86,16 +87,11 @@ export default function Editor2D() {
                   key={item.id}
                   x={item.position[0] * SCALE}
                   y={item.position[2] * SCALE}
+                  // 2. 新增：綁定旋轉角度
+                  rotation={item.rotation || 0}
                   draggable
                   
-                  // --- 關鍵修正 1: 使用 dragBoundFunc ---
-                  // 這是 Konva 原生的邊界限制功能，它接收「絕對座標 (pos)」，回傳「修正後的座標」
-                  // 這樣做非常平滑，完全不會跟 React 的渲染打架
                   dragBoundFunc={(pos) => {
-                    // pos 是相對於整個視窗左上角的座標，我們需要換算回房間邊界
-                    // 房間的絕對中心點是 (CENTER_X, CENTER_Y)
-                    
-                    // 計算邊界 (絕對座標)
                     const minX = CENTER_X - (roomPixelWidth / 2) + (itemWidth / 2)
                     const maxX = CENTER_X + (roomPixelWidth / 2) - (itemWidth / 2)
                     const minY = CENTER_Y - (roomPixelLength / 2) + (itemLength / 2)
@@ -107,18 +103,20 @@ export default function Editor2D() {
                     }
                   }}
 
-                  // --- 關鍵修正 2: onDragMove 只負責同步數據 ---
+                  // --- 新增：雙擊旋轉事件 ---
+                  onDblClick={() => {
+                    const currentRotation = item.rotation || 0
+                    const newRotation = (currentRotation + 90) % 360 // 讓角度在 0-360 循環
+                    updateRot(item.id, newRotation)
+                  }}
+
                   onDragMove={(e) => {
-                    // 取得相對於 Group (0,0) 的位置
                     const x = e.target.x()
                     const y = e.target.y()
                     
-                    // 換算成 3D 座標
                     const x3d = x / SCALE
                     const z3d = y / SCALE
 
-                    // 這裡不用再寫邊界判斷了，因為上面的 dragBoundFunc 已經保證了位置合法
-                    // 直接更新 Store，讓 3D 畫面動起來
                     updatePos(item.id, [x3d, 0.5, z3d])
                   }}
                 >

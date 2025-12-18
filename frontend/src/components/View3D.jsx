@@ -2,26 +2,25 @@ import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Grid, Text, GizmoHelper, GizmoViewport } from '@react-three/drei'
 import useStore from '../store'
 
-// 1. 傢俱組件 (超級防禦版)
-function FurnitureItem({ position, color, dimensions }) {
-  // 防禦 1: 如果沒有位置，就不渲染
+// 1. 修改 FurnitureItem 組件接收 rotation
+function FurnitureItem({ position, color, dimensions, rotation }) {
   if (!position || position.length < 3) return null;
-
-  // 防禦 2: 如果沒有尺寸，給預設值
   const args = dimensions || [1, 1, 1];
-
-  // 防禦 3: 確保顏色有值
   const safeColor = color || 'white';
 
+  // 2. 處理角度轉弧度
+  // 注意：Konva 的旋轉方向是順時針，Three.js 也是，但座標系不同，
+  // 通常需要加個負號或調整軸向。這裡我們繞 Y 軸轉 (水平旋轉)。
+  const rotationY = (rotation || 0) * (Math.PI / 180) * -1; // -1 是為了讓旋轉方向跟 2D 一致
+
   return (
-    <mesh position={position}>
+    <mesh position={position} rotation={[0, rotationY, 0]}>
       <boxGeometry args={args} />
       <meshStandardMaterial color={safeColor} />
     </mesh>
   )
 }
 
-// 2. 方位文字組件
 function RoomLabels({ width, length }) {
   const padding = 1.5 
   const textProps = {
@@ -81,13 +80,13 @@ export default function View3D() {
 
         <RoomLabels width={roomDim.width} length={roomDim.length} />
 
-        {/* 渲染列表 */}
         {furnitureList.map((item) => (
           <FurnitureItem 
             key={item.id} 
             position={item.position} 
             color={item.color} 
-            dimensions={item.dimensions} // 確保傳遞 dimensions
+            dimensions={item.dimensions}
+            rotation={item.rotation} // 3. 記得把 store 裡的 rotation 傳進去
           />
         ))}
         
