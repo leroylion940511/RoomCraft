@@ -14,6 +14,9 @@ export default function Editor2D() {
   const CENTER_X = STAGE_WIDTH / 2
   const CENTER_Y = STAGE_HEIGHT / 2
 
+  const roomPixelWidth = roomDim.width * SCALE
+  const roomPixelLength = roomDim.length * SCALE
+
   const renderGrid = () => {
     const lines = []
     const width = roomDim.width * SCALE
@@ -45,33 +48,11 @@ export default function Editor2D() {
     return lines
   }
 
-  const handleDragEnd = (e, id) => {
-    const x2d = e.target.x()
-    const y2d = e.target.y()
-    
-    let x3d = x2d / SCALE
-    let z3d = y2d / SCALE
-
-    const limitX = roomDim.width / 2 - 0.5
-    const limitZ = roomDim.length / 2 - 0.5
-
-    if (x3d > limitX) x3d = limitX
-    if (x3d < -limitX) x3d = -limitX
-    if (z3d > limitZ) z3d = limitZ
-    if (z3d < -limitZ) z3d = -limitZ
-
-    updatePos(id, [x3d, 0.5, z3d])
-    
-    e.target.position({ x: x3d * SCALE, y: z3d * SCALE })
-  }
-
-  const roomPixelWidth = roomDim.width * SCALE
-  const roomPixelLength = roomDim.length * SCALE
-
   return (
     <div style={{ width: "100%", height: "100%", background: "#333", overflow: "hidden" }}>
       <Stage width={STAGE_WIDTH} height={STAGE_HEIGHT}>
         <Layer>
+          {/* 房間主容器 */}
           <Group x={CENTER_X} y={CENTER_Y}>
             
             <Rect
@@ -96,9 +77,9 @@ export default function Editor2D() {
             <Text text="右 (Right +X)" x={roomPixelWidth/2 + 10} y={-5} fill="#ccc" />
 
             {furnitureList.map((item) => {
-              
-              // 防禦性代碼：取得尺寸，若無則給預設值
               const dims = item.dimensions || [1, 1, 1] 
+              const itemWidth = dims[0] * SCALE
+              const itemLength = dims[2] * SCALE
 
               return (
                 <Group
@@ -106,16 +87,49 @@ export default function Editor2D() {
                   x={item.position[0] * SCALE}
                   y={item.position[2] * SCALE}
                   draggable
-                  onDragEnd={(e) => handleDragEnd(e, item.id)}
+                  
+                  // --- 關鍵修正 1: 使用 dragBoundFunc ---
+                  // 這是 Konva 原生的邊界限制功能，它接收「絕對座標 (pos)」，回傳「修正後的座標」
+                  // 這樣做非常平滑，完全不會跟 React 的渲染打架
+                  dragBoundFunc={(pos) => {
+                    // pos 是相對於整個視窗左上角的座標，我們需要換算回房間邊界
+                    // 房間的絕對中心點是 (CENTER_X, CENTER_Y)
+                    
+                    // 計算邊界 (絕對座標)
+                    const minX = CENTER_X - (roomPixelWidth / 2) + (itemWidth / 2)
+                    const maxX = CENTER_X + (roomPixelWidth / 2) - (itemWidth / 2)
+                    const minY = CENTER_Y - (roomPixelLength / 2) + (itemLength / 2)
+                    const maxY = CENTER_Y + (roomPixelLength / 2) - (itemLength / 2)
+
+                    return {
+                      x: Math.max(minX, Math.min(maxX, pos.x)),
+                      y: Math.max(minY, Math.min(maxY, pos.y))
+                    }
+                  }}
+
+                  // --- 關鍵修正 2: onDragMove 只負責同步數據 ---
+                  onDragMove={(e) => {
+                    // 取得相對於 Group (0,0) 的位置
+                    const x = e.target.x()
+                    const y = e.target.y()
+                    
+                    // 換算成 3D 座標
+                    const x3d = x / SCALE
+                    const z3d = y / SCALE
+
+                    // 這裡不用再寫邊界判斷了，因為上面的 dragBoundFunc 已經保證了位置合法
+                    // 直接更新 Store，讓 3D 畫面動起來
+                    updatePos(item.id, [x3d, 0.5, z3d])
+                  }}
                 >
                   <Rect
-                    width={dims[0] * SCALE} 
-                    height={dims[2] * SCALE}
+                    width={itemWidth} 
+                    height={itemLength}
                     fill={item.color}
                     stroke="#333"
                     strokeWidth={2}
-                    offsetX={(dims[0] * SCALE) / 2}
-                    offsetY={(dims[2] * SCALE) / 2}
+                    offsetX={itemWidth / 2}
+                    offsetY={itemLength / 2}
                     cornerRadius={5}
                   />
                   <Text
