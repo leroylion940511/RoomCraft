@@ -17,21 +17,23 @@ const useStore = create((set) => ({
     ),
   })),
 
+  setFurniture: (newFurnitureList) => set({ 
+    furniture: newFurnitureList 
+  }),
+
   addFurniture: (itemConfig) => set((state) => {
+    const { id, ...restConfig } = itemConfig;
     const dims = itemConfig.dimensions || [1, 1, 1];
-    
     const height = dims[1] || 1;
 
     return {
       furniture: [
         ...state.furniture,
         {
-          id: Math.random().toString(36).substr(2, 9),
+          ...restConfig,
+          id: crypto.randomUUID(),
           position: [0, height / 2, 0], 
           rotation: 0,
-          ...itemConfig,
-          // 1. 新增：模型路徑
-          // 如果傳入的 config 有 modelUrl 就用，沒有就 undefined (會變回方塊)
           modelUrl: itemConfig.modelUrl,
           dimensions: dims,
         }

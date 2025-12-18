@@ -2,6 +2,7 @@ import { Suspense } from 'react' // 1. 引入 Suspense
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Grid, Text, GizmoHelper, GizmoViewport, useGLTF, Gltf } from '@react-three/drei' // 2. 引入 useGLTF, Gltf
 import useStore from '../store'
+import { Environment } from '@react-three/drei'
 
 // 3. 修改 FurnitureItem：支援模型渲染
 function FurnitureItem({ position, color, dimensions, rotation, modelUrl}) { // 接收 modelUrl
@@ -65,7 +66,7 @@ export default function View3D() {
         
         {/* 4. 加入 Suspense：這是載入模型必須的，fallback 可以放個讀取條，這裡先設 null */}
         <Suspense fallback={null}>
-
+          <Environment preset="apartment" />
           <color attach="background" args={['#1a1a1a']} />
           
           <ambientLight intensity={0.5} />
