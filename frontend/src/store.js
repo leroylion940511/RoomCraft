@@ -2,7 +2,6 @@ import { create } from 'zustand'
 
 const useStore = create((set) => ({
   roomDimensions: { width: 10, length: 10 },
-  
   furniture: [],
 
   updateFurniturePosition: (id, newPosition) => set((state) => ({
@@ -17,8 +16,11 @@ const useStore = create((set) => ({
     ),
   })),
 
-  setFurniture: (newFurnitureList) => set({ 
-    furniture: newFurnitureList 
+  setFurniture: (newFurnitureList) => set({ furniture: newFurnitureList }),
+
+  // --- 新增：設定房間尺寸 ---
+  setRoomDimensions: (width, length) => set({ 
+    roomDimensions: { width, length } 
   }),
 
   addFurniture: (itemConfig) => set((state) => {
@@ -30,12 +32,12 @@ const useStore = create((set) => ({
       furniture: [
         ...state.furniture,
         {
-          ...restConfig,
+          ...restConfig, 
           id: crypto.randomUUID(),
           position: [0, height / 2, 0], 
           rotation: 0,
-          modelUrl: itemConfig.modelUrl,
           dimensions: dims,
+          modelUrl: itemConfig.modelUrl,
         }
       ]
     };
