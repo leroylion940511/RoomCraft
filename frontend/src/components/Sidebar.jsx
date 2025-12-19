@@ -1,211 +1,226 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import useStore from '../store'
-import { saveDesign, loadDesign } from '../api'
+import { saveDesign, loadDesign, fetchDesigns, deleteDesign, fetchCatalog } from '../api'
 
 export default function Sidebar() {
+  // --- Store State & Actions ---
   const addFurniture = useStore((state) => state.addFurniture)
   const removeFurniture = useStore((state) => state.removeFurniture)
   const furnitureList = useStore((state) => state.furniture)
   const roomDim = useStore((state) => state.roomDimensions)
   const setRoomDimensions = useStore((state) => state.setRoomDimensions)
-  
-  // --- 新增：取得與設定房間風格 ---
   const roomStyle = useStore((state) => state.roomStyle)
   const setRoomStyle = useStore((state) => state.setRoomStyle)
+  const setFurniture = useStore((state) => state.setFurniture)
 
-  const catalog = [
-    {
-      id: 'cat-1',
-      name: '普通方塊',
-      type: 'box',
-      dimensions: [1, 1, 1],
-      color: '#ffaa00'
-    },
-    {
-      id: 'cat-2',
-      name: '長桌 (方塊)',
-      type: 'box',
-      dimensions: [2, 0.8, 1],
-      color: '#885522'
-    },
-    {
-      id: 'cat-3',
-      name: '🪑 真實椅子',
-      type: 'model',
-      dimensions: [1, 1, 1],
-      modelUrl: '/chair.glb',
-      color: '#ffffff'
+  // --- Local State (UI 狀態) ---
+  const [designList, setDesignList] = useState([]) // 存檔列表
+  const [currentId, setCurrentId] = useState("my-room") // 目前的檔案 ID
+  const [designName, setDesignName] = useState("我的新設計") // 目前的檔案名稱
+  
+  const [catalog, setCatalog] = useState([]) // 家具目錄
+  const [activeCategory, setActiveCategory] = useState("all") // 目前選中的分類
+
+  // --- 初始化：抓取存檔列表與家具目錄 ---
+  useEffect(() => {
+    refreshList()
+    initCatalog()
+  }, [])
+
+  const refreshList = async () => {
+    try {
+      const list = await fetchDesigns()
+      setDesignList(list)
+    } catch (e) {
+      console.log("後端沒開？無法取得專案列表")
     }
-  ]
+  }
 
+  const initCatalog = async () => {
+    const data = await fetchCatalog()
+    setCatalog(data)
+  }
+
+  // --- 處理存檔 ---
   const handleSave = async () => {
     if (furnitureList.length === 0) {
-      alert("房間是空的，先放點東西吧！")
-      return
+      if(!confirm("房間是空的，確定要存檔嗎？")) return;
     }
 
     const designData = {
-      name: "我的房間設計",
+      name: designName,
       roomDimensions: roomDim,
-      // --- 新增：存檔時也要把顏色存起來 ---
       roomStyle: roomStyle,
       furniture: furnitureList
     }
 
     try {
-      alert("正在連線後端進行存檔...")
-      const result = await saveDesign(designData)
-      alert(`✅ 存檔成功！ID: ${result.id}`)
+      await saveDesign(currentId, designData)
+      alert(`✅ 存檔成功！`)
+      refreshList() // 更新列表
     } catch (error) {
-      alert("❌ 存檔失敗，請確認後端 (uvicorn) 是否有開啟？")
-      console.error(error)
+      alert("❌ 存檔失敗，請確認後端是否開啟")
     }
   }
 
-  const handleLoad = async () => {
+  // --- 處理讀檔 ---
+  const handleLoad = async (id) => {
     try {
-      const data = await loadDesign()
+      const data = await loadDesign(id)
       
-      if (data && data.furniture) {
-        if (data.roomDimensions) {
-          setRoomDimensions(data.roomDimensions.width, data.roomDimensions.length)
-        }
+      if (data) {
+        // 同步所有狀態回 Store
+        if (data.roomDimensions) setRoomDimensions(data.roomDimensions.width, data.roomDimensions.length)
+        if (data.roomStyle) setRoomStyle(data.roomStyle)
+        if (data.furniture) setFurniture(data.furniture)
         
-        // --- 新增：讀檔時同步更新風格 ---
-        if (data.roomStyle) {
-          setRoomStyle(data.roomStyle)
-        }
-        
-        useStore.getState().setFurniture(data.furniture)
-        
-        alert(`📂 讀取成功！已載入 ${data.furniture.length} 個家具。`)
-      } else {
-        alert("讀取成功，但檔案似乎是空的？")
+        // 更新 UI 狀態
+        setCurrentId(id)
+        setDesignName(data.name)
+        alert(`📂 已載入：${data.name}`)
       }
-      
     } catch (error) {
-      alert("❌ 讀檔失敗，請確認後端是否正常？")
-      console.error(error)
+      alert("❌ 讀檔失敗")
     }
   }
 
+  // --- 處理刪除 ---
+  const handleDelete = async (id, name) => {
+    if (!confirm(`確定要刪除「${name}」嗎？這無法復原喔！`)) return
+    try {
+      await deleteDesign(id)
+      // 如果刪掉的是當前正在編輯的，重置為新專案
+      if (id === currentId) {
+        handleNewProject()
+      }
+      refreshList()
+    } catch (error) {
+      alert("❌ 刪除失敗")
+    }
+  }
+
+  // --- 開新專案 ---
+  const handleNewProject = () => {
+    // 這裡簡單重置，實務上應該提示是否保存舊進度
+    setFurniture([])
+    setCurrentId(`design-${Date.now()}`) // 產生新的隨機 ID
+    setDesignName("未命名設計")
+    setRoomDimensions(10, 10) // 重置為預設尺寸
+    setRoomStyle({ floorColor: '#555555', wallColor: '#f0f0f0' }) // 重置顏色
+  }
+
+  // --- 處理尺寸輸入 ---
   const handleDimChange = (e, type) => {
     const val = parseFloat(e.target.value)
     if (isNaN(val) || val <= 0) return 
-
-    if (type === 'width') {
-      setRoomDimensions(val, roomDim.length)
-    } else {
-      setRoomDimensions(roomDim.width, val)
-    }
+    if (type === 'width') setRoomDimensions(val, roomDim.length)
+    else setRoomDimensions(roomDim.width, val)
   }
 
-  return (
-    <div style={{
-      width: '250px',
-      height: '100%',
-      background: '#2c3e50',
-      color: 'white',
-      padding: '20px',
-      display: 'flex',
-      flexDirection: 'column',
-      boxSizing: 'border-box',
-      borderRight: '1px solid #34495e'
-    }}>
-      <h2 style={{ margin: '0 0 20px 0', fontSize: '1.5rem', textAlign: 'center' }}>
-        🏠 RoomCraft
-      </h2>
+  // --- 目錄篩選 ---
+  const filteredCatalog = activeCategory === 'all' 
+    ? catalog 
+    : catalog.filter(item => item.category === activeCategory)
 
-      <div style={{ marginBottom: '20px', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '5px' }}>
-        <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: '10px' }}>📏 房間尺寸 (公尺)</h3>
+  return (
+    <div style={{ width: '280px', height: '100%', background: '#2c3e50', color: 'white', display: 'flex', flexDirection: 'column', borderRight: '1px solid #34495e', boxSizing: 'border-box' }}>
+      
+      {/* 1. 頂部：專案管理區 */}
+      <div style={{ padding: '15px', background: '#233040', borderBottom: '1px solid #34495e' }}>
+        <h2 style={{ margin: '0 0 10px 0', fontSize: '1.2rem', textAlign: 'center' }}>🗄️ 專案管理</h2>
+        
+        <div style={{ marginBottom: '10px' }}>
+            <label style={{fontSize: '0.8rem', color:'#bdc3c7'}}>專案名稱</label>
+            <input 
+                value={designName}
+                onChange={(e) => setDesignName(e.target.value)}
+                style={{ width: '100%', padding: '5px', boxSizing: 'border-box', marginTop: '2px' }}
+            />
+        </div>
+
+        <div style={{ display: 'flex', gap: '5px', marginBottom: '15px' }}>
+            <button onClick={handleSave} style={{ flex: 1, padding: '6px', background: '#27ae60', color: 'white', border:'none', cursor:'pointer', borderRadius: '3px' }}>💾 儲存</button>
+            <button onClick={handleNewProject} style={{ flex: 1, padding: '6px', background: '#2980b9', color: 'white', border:'none', cursor:'pointer', borderRadius: '3px' }}>📄 新建</button>
+        </div>
+
+        {/* 存檔列表區塊 */}
+        <div style={{ maxHeight: '100px', overflowY: 'auto', background: 'rgba(0,0,0,0.3)', borderRadius: '4px', padding: '5px' }}>
+            <div style={{fontSize: '0.8rem', color:'#bdc3c7', marginBottom:'5px'}}>已存檔案 ({designList.length})</div>
+            {designList.length === 0 && <div style={{fontSize:'0.8rem', color:'#7f8c8d', textAlign:'center'}}>暫無存檔</div>}
+            {designList.map(d => (
+                <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '5px', padding: '4px', borderRadius: '3px', background: currentId===d.id ? '#34495e' : 'transparent', alignItems: 'center' }}>
+                    <span 
+                        onClick={() => handleLoad(d.id)} 
+                        style={{ cursor: 'pointer', textDecoration: 'underline', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'140px', color: currentId===d.id ? '#3498db' : 'white' }}
+                        title={d.name}
+                    >
+                        {d.name}
+                    </span>
+                    <span onClick={() => handleDelete(d.id, d.name)} style={{ cursor: 'pointer', color: '#e74c3c', fontWeight: 'bold', padding: '0 5px' }}>✕</span>
+                </div>
+            ))}
+        </div>
+      </div>
+
+      {/* 2. 中間：房間設定 */}
+      <div style={{ padding: '15px', overflowY: 'auto', flexShrink: 0 }}>
+        <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: '10px' }}>🏠 房間設定</h3>
+        
+        {/* 尺寸輸入 */}
         <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
           <div style={{ flex: 1 }}>
-            <label style={{ fontSize: '0.8rem', color: '#bdc3c7' }}>寬度 (X)</label>
-            <input 
-              type="number" 
-              value={roomDim.width} 
-              onChange={(e) => handleDimChange(e, 'width')}
-              style={{ width: '100%', padding: '5px', borderRadius: '3px', border: 'none', marginTop: '2px' }}
-            />
+            <label style={{ fontSize: '0.8em', color: '#bdc3c7' }}>寬(X)</label>
+            <input type="number" value={roomDim.width} onChange={(e)=>handleDimChange(e, 'width')} style={{width:'100%', padding: '4px', border: 'none', borderRadius: '3px'}}/>
           </div>
           <div style={{ flex: 1 }}>
-            <label style={{ fontSize: '0.8rem', color: '#bdc3c7' }}>長度 (Z)</label>
-            <input 
-              type="number" 
-              value={roomDim.length} 
-              onChange={(e) => handleDimChange(e, 'length')}
-              style={{ width: '100%', padding: '5px', borderRadius: '3px', border: 'none', marginTop: '2px' }}
-            />
+            <label style={{ fontSize: '0.8em', color: '#bdc3c7' }}>長(Z)</label>
+            <input type="number" value={roomDim.length} onChange={(e)=>handleDimChange(e, 'length')} style={{width:'100%', padding: '4px', border: 'none', borderRadius: '3px'}}/>
           </div>
         </div>
 
-        {/* --- 新增：材質顏色設定區 --- */}
-        <div style={{ display: 'flex', gap: '10px', marginTop: '10px', borderTop: '1px solid #555', paddingTop: '10px' }}>
-           <div style={{ flex: 1 }}>
-            <label style={{ fontSize: '0.8rem', color: '#bdc3c7' }}>地板色</label>
-            <input 
-              type="color" 
-              value={roomStyle.floorColor} 
-              onChange={(e) => setRoomStyle({ floorColor: e.target.value })}
-              style={{ width: '100%', height: '30px', border: 'none', padding: 0, cursor: 'pointer' }}
-            />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: '0.8rem', color: '#bdc3c7' }}>牆壁色</label>
-            <input 
-              type="color" 
-              value={roomStyle.wallColor} 
-              onChange={(e) => setRoomStyle({ wallColor: e.target.value })}
-              style={{ width: '100%', height: '30px', border: 'none', padding: 0, cursor: 'pointer' }}
-            />
-          </div>
+        {/* 顏色選擇 */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: '0.8em', color: '#bdc3c7' }}>地板色</label>
+              <input type="color" value={roomStyle.floorColor} onChange={(e)=>setRoomStyle({floorColor: e.target.value})} style={{width:'100%', height:'30px', border:'none', padding: 0, cursor:'pointer'}} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: '0.8em', color: '#bdc3c7' }}>牆壁色</label>
+              <input type="color" value={roomStyle.wallColor} onChange={(e)=>setRoomStyle({wallColor: e.target.value})} style={{width:'100%', height:'30px', border:'none', padding: 0, cursor:'pointer'}} />
+            </div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-        <button 
-          onClick={handleSave} 
-          style={{ 
-            flex: 1, 
-            padding: '10px', 
-            background: '#27ae60',
-            color: 'white', 
-            border: 'none', 
-            cursor: 'pointer', 
-            borderRadius: '5px',
-            fontWeight: 'bold'
-          }}
-        >
-          💾 存檔
-        </button>
-        <button 
-          onClick={handleLoad} 
-          style={{ 
-            flex: 1, 
-            padding: '10px', 
-            background: '#e67e22',
-            color: 'white', 
-            border: 'none', 
-            cursor: 'pointer', 
-            borderRadius: '5px',
-            fontWeight: 'bold'
-          }}
-        >
-          📂 讀檔
-        </button>
-      </div>
+      <hr style={{ border: '0', borderTop: '1px solid #7f8c8d', margin: 0 }} />
 
-      <hr style={{ border: '0', borderTop: '1px solid #7f8c8d', width: '100%', marginBottom: '20px' }} />
+      {/* 3. 下方：家具目錄 & 清單 */}
+      <div style={{ flex: 1, padding: '15px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: '10px' }}>🛒 家具目錄</h3>
+        
+        {/* 分類按鈕 */}
+        <div style={{ display: 'flex', gap: '5px', marginBottom: '10px', overflowX: 'auto', paddingBottom:'5px' }}>
+          {['all', 'bedroom', 'living_room', 'dining', 'decoration'].map(cat => (
+            <button 
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              style={{
+                background: activeCategory === cat ? '#3498db' : '#34495e',
+                color: 'white', border: 'none', borderRadius: '15px', padding: '4px 10px', fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap'
+              }}
+            >
+              {cat === 'all' ? '全部' : cat}
+            </button>
+          ))}
+        </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', marginBottom: '20px' }}>
-        <h3 style={{ fontSize: '1.1rem', marginBottom: '10px', color: '#ecf0f1' }}>🛒 家具目錄</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {catalog.map((item) => (
+        {/* 動態商品列表 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+          {filteredCatalog.map((item) => (
             <button
               key={item.id}
               onClick={() => addFurniture(item)}
               style={{
-                padding: '12px',
+                padding: '10px',
                 background: '#34495e',
                 color: 'white',
                 border: 'none',
@@ -220,54 +235,31 @@ export default function Sidebar() {
               onMouseOver={(e) => e.currentTarget.style.background = '#2980b9'}
               onMouseOut={(e) => e.currentTarget.style.background = '#34495e'}
             >
-              <span>{item.name}</span>
+              <span>{item.type === 'model' ? '📦 ' : '🟦 '}{item.name}</span>
               <span style={{ fontSize: '0.8em', color: '#bdc3c7' }}>
                 {item.dimensions[0]}x{item.dimensions[2]}m
               </span>
             </button>
           ))}
+          {filteredCatalog.length === 0 && (
+             <div style={{ textAlign: 'center', color: '#95a5a6', fontSize: '0.9rem' }}>
+               {catalog.length === 0 ? "正在讀取目錄..." : "此分類無商品"}
+             </div>
+          )}
         </div>
-      </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', borderTop: '1px solid #7f8c8d', paddingTop: '10px' }}>
-        <h3 style={{ fontSize: '1.1rem', marginBottom: '10px' }}>
-          📋 已放置 ({furnitureList.length})
-        </h3>
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {furnitureList.map((item) => (
-            <li key={item.id} style={{ 
-              marginBottom: '8px', 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              background: 'rgba(0,0,0,0.2)',
-              padding: '8px',
-              borderRadius: '4px'
-            }}>
-              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>
-                <span style={{ fontSize: '0.9em' }}>{item.name}</span>
-              </div>
-              <button 
-                onClick={() => removeFurniture(item.id)}
-                style={{
-                  background: '#c0392b',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '3px',
-                  padding: '4px 8px',
-                  cursor: 'pointer',
-                  fontSize: '0.8em'
-                }}
-              >
-                刪除
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div style={{ marginTop: 'auto', paddingTop: '10px', fontSize: '0.8rem', color: '#95a5a6', textAlign: 'center' }}>
-        RoomCraft Alpha v0.3
+        {/* 已放置列表 */}
+        <div style={{ borderTop: '1px solid #555', paddingTop: '10px', marginTop: 'auto' }}>
+            <div style={{fontSize:'0.9rem', marginBottom:'5px'}}>已放置物件 ({furnitureList.length})</div>
+            <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+              {furnitureList.map((item) => (
+                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '5px', background: 'rgba(0,0,0,0.2)', padding:'5px', borderRadius: '3px', alignItems: 'center' }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>{item.name}</span>
+                      <button onClick={() => removeFurniture(item.id)} style={{background:'#c0392b', border:'none', color:'white', cursor:'pointer', borderRadius: '2px', padding: '2px 6px'}}>刪除</button>
+                  </div>
+              ))}
+            </div>
+        </div>
       </div>
     </div>
   )

@@ -1,122 +1,173 @@
-# RoomCraft互動式 3D 虛擬房間設計工具
+# RoomCraft - 3D 室內設計與擺設系統
 
-![Project Status](https://img.shields.io/badge/Status-Alpha%20MVP-orange)
-![License](https://img.shields.io/badge/License-MIT-blue)
-![React](https://img.shields.io/badge/Frontend-React_18-61DAFB?logo=react)
-![Three.js](https://img.shields.io/badge/3D-Three.js_%2F_R3F-black?logo=three.js)
-![Python](https://img.shields.io/badge/Backend-Python_FastAPI-3776AB?logo=python)
+**RoomCraft** 是一個全端 (Full-Stack) 的互動式室內設計應用程式。使用者可以在 2D 平面圖上拖曳家具，並即時在 3D 視角中預覽擺設效果。專案具備完整的後端資料庫支援，實現了設計存檔、多專案管理以及動態家具目錄系統。
 
-**RoomCraft** 是一個基於 WebGL 技術的現代化室內設計工具。它解決了傳統設計軟體操作複雜的問題，透過「雙向數據同步」技術，讓使用者在直覺的 2D 平面圖上進行拖曳佈局時，能夠即時（Real-time）看到 3D 空間的渲染成果。
+## 核心功能 (Features)
 
-> **作者**：張志晨 (中華大學資工系)
-> **專案類型**：畢業專題 / WebGL 應用開發
+### 2D 編輯器 (互動核心)
 
----
+* **拖曳擺放**：直覺的拖曳操作，支援網格吸附 (Grid Snapping)。
+* **智慧碰撞偵測**：
+* **視覺回饋**：當家具重疊時，邊框即時變紅警告。
+* **自動彈開 (Smart Snap)**：若放置位置不合法，家具會自動彈回最近的合法邊緣，實現磁吸式對齊效果。
+* **旋轉保護**：旋轉時若會撞到牆壁或其他物體，系統會自動計算並將物體推移至安全位置，防止穿模。
 
-## 核心功能 (Key Features)
 
-* **2D/3D 雙向即時同步**：
-    * 採用 **Zustand** 進行全域狀態管理，實現單一資料來源 (Single Source of Truth)。
-    * 左側 2D 平面圖移動傢俱，右側 3D 模型毫秒級同步更新。
-* **直覺的拖放操作 (Drag & Drop)**：
-    * 基於 **Konva.js** 的互動式畫布。
-    * 內建**自動邊界限制 (Boundary Check)**，防止物件被拖出房間範圍。
-* **防禦性渲染機制 (Defensive Rendering)**：
-    * 具備穩健的數據處理能力，即使後端數據缺漏（如缺少尺寸定義），系統仍能透過預設值安全渲染，防止程式崩潰。
-* **空間方位輔助**：
-    * 3D 視圖整合 **Gizmo 導航羅盤**與地板方位標示，解決使用者在 3D 空間迷失方向的問題。
-* **模組化傢俱系統**：
-    * 支援多態渲染 (Polymorphic Rendering)，根據傢俱屬性動態生成不同尺寸與顏色的 3D 模型。
+* **動態房間尺寸**：可即時調整房間長寬，網格與邊界會自動更新。
 
----
+### 3D 預覽 (視覺呈現)
 
-## 技術堆疊 (Tech Stack)
+* **即時同步**：2D 的任何更動都會毫秒級同步至 3D 場景。
+* **真實渲染**：
+* 支援 **GLTF/GLB** 真實 3D 模型載入。
+* 配備 **Environment Lighting** (環境光) 與 **Contact Shadows** (接觸陰影)，提升落地感與真實度。
+* 自動生成 L 型牆面，提供沈浸式空間感。
 
-### 前端 (Frontend)
-* **核心框架**：React 18 (Vite 建置)
-* **3D 引擎**：Three.js, React Three Fiber (R3F), Drei
-* **2D 繪圖**：Konva.js, React-Konva
-* **狀態管理**：Zustand
-* **語言**：JavaScript (ES6+) / Planned migration to TypeScript
 
-### 後端 (Backend) - *開發中*
-* **框架**：Python FastAPI
-* **資料庫**：MongoDB (NoSQL)
+* **風格自定義**：支援即時更換地板與牆壁顏色。
+
+### 系統與資料 (全端架構)
+
+* **專案管理**：支援多個設計圖存檔、讀取、刪除與新建。
+* **動態家具目錄**：家具清單並非寫死，而是從 MongoDB 資料庫動態載入，支援分類篩選 (臥室、客廳等)。
+* **RESTful API**：完整的 Python FastAPI 後端架構。
 
 ---
 
-## 快速開始 (Getting Started)
+## 技術棧 (Tech Stack)
 
-如果你想在本地端運行此專案，請按照以下步驟操作：
+### Frontend (前端)
 
-### 1. 環境需求
-* Node.js (v16 或更高版本)
-* npm 或 yarn
+* **Framework**: React (Vite)
+* **2D Graphics**: `react-konva` (Canvas API 封裝)
+* **3D Graphics**: `@react-three/fiber`, `@react-three/drei` (Three.js 封裝)
+* **State Management**: `zustand` (跨組件狀態同步)
+* **HTTP Client**: `axios`
 
-### 2. 安裝與執行
+### Backend (後端)
+
+* **Framework**: FastAPI (高效能 Python Web 框架)
+* **Database Driver**: `motor` (MongoDB 非同步驅動)
+* **Data Validation**: `pydantic`
+* **Server**: `uvicorn`
+
+### Database (資料庫)
+
+* **MongoDB**: 儲存家具目錄 (Catalog) 與使用者設計圖 (Designs)。
+
+---
+
+## 快速啟動 (Quick Start)
+
+請開啟三個終端機視窗 (Terminal Tabs)，依序執行以下步驟：
+
+### 1. 啟動資料庫
+
+確保 MongoDB 服務已在背景執行 (預設 Port 27017)。
 
 ```bash
-# Clone 此專案
-git clone https://github.com/leroylion940511/RoomCraft.git
+# macOS (Homebrew)
+brew services start mongodb-community
 
-# 進入前端目錄
-cd RoomCraft/frontend
+```
 
-# 安裝依賴套件
+### 2. 啟動後端伺服器
+
+```bash
+cd backend
+
+# 建立/啟用虛擬環境 (首次執行)
+python3 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# 安裝依賴 (首次執行)
+pip install -r requirements.txt
+# 或手動安裝: pip install fastapi "uvicorn[standard]" motor pydantic
+
+# 啟動伺服器 (Port: 8000)
+uvicorn main:app --reload
+
+```
+
+### 3. 啟動前端應用
+
+```bash
+cd frontend
+
+# 安裝依賴 (首次執行)
 npm install
 
-# 啟動開發伺服器
+# 啟動開發伺服器 (Port: 5173)
 npm run dev
+
 ```
 
-啟動後，請打開瀏覽器訪問 http://localhost:5173 即可看到畫面。
+> 網頁將運行於：[http://localhost:5173](https://www.google.com/search?q=http://localhost:5173)
 
 ---
 
-## 📂 專案結構 (Project Structure)
+## 資料初始化 (Data Seeding)
+
+**重要：首次執行必做**
+剛啟動時，家具目錄可能是空的。請執行以下步驟將預設家具寫入資料庫：
+
+1. 確保後端 (`uvicorn`) 正在執行。
+2. 前往 API 文件頁面：[http://127.0.0.1:8000/docs](https://www.google.com/search?q=http://127.0.0.1:8000/docs)
+3. 找到並展開 **POST** `/api/catalog/seed`。
+4. 點擊 **Try it out** -> **Execute**。
+5. 確認回傳 Code 為 **200**。
+6. 回到前端網頁刷新，側邊欄即會顯示家具列表。
+
+---
+
+## 操作說明 (Controls)
+
+* **新增家具**：點擊左側側邊欄的家具項目。
+* **移動家具**：在 2D 視圖 (左區塊) 按住滑鼠左鍵拖曳。
+* **旋轉家具**：在 2D 視圖 **雙擊 (Double Click)** 家具，每次旋轉 90 度。
+* **刪除家具**：點擊側邊欄右下角的「已放置清單」中的刪除按鈕。
+* **3D 視角控制**：
+* **旋轉**：按住滑鼠左鍵拖曳。
+* **平移**：按住滑鼠右鍵拖曳。
+* **縮放**：滾動滑鼠滾輪。
+
+
+
+---
+
+## 專案結構 (Project Structure)
 
 ```text
-Plaintext
 RoomCraft/
-├── frontend/               # React 前端應用
+├── backend/                # Python 後端
+│   ├── main.py             # API 路由與資料庫邏輯
+│   ├── requirements.txt    # Python 依賴清單
+│   └── ...
+├── frontend/               # React 前端
+│   ├── public/             # 靜態資源
+│   │   └── models/         # 3D 模型 (.glb) 存放處
 │   ├── src/
-│   │   ├── components/     # UI 組件
-│   │   │   ├── Editor2D.jsx    # 2D 平面編輯器 (Konva)
-│   │   │   ├── View3D.jsx      # 3D 場景渲染器 (R3F)
-│   │   │   └── Sidebar.jsx     # 傢俱目錄側邊欄
-│   │   ├── data/
-│   │   │   └── catalog.js      # 傢俱靜態資料定義
-│   │   ├── store.js        # Zustand 全域狀態管理 (核心)
-│   │   ├── App.jsx         # 主佈局
-│   │   └── main.jsx        # 入口點
-│   └── package.json
-├── backend/                # Python 後端 (建置中)
+│   │   ├── components/
+│   │   │   ├── Editor2D.jsx  # 2D 編輯器與碰撞邏輯
+│   │   │   ├── View3D.jsx    # 3D 場景渲染
+│   │   │   └── Sidebar.jsx   # UI 介面與資料管理
+│   │   ├── store.js        # Zustand 全域狀態管理
+│   │   └── api.js          # Axios API 封裝
+│   └── ...
 └── README.md
+
 ```
 
 ---
 
-## 開發路線圖 (Roadmap)
-- [x] **MVP 核心**：環境建置、2D/3D 同步、基礎拖曳。
+## 開發筆記與模型資源
 
-- [x] **UI 優化**：側邊欄目錄、網格系統、方位標示。
-
-- [ ] **進階互動**：
-
-    - [x] 傢俱旋轉功能 (Rotation)。
-
-    - [ ] 碰撞偵測 (防止傢俱重疊)。
-
-- [ ] **視覺升級**：
-
-    - [ ] 引入 GLTF/GLB 真實 3D 模型。
-
-    - [ ] PBR 材質與光影優化。
-
-- [ ] **後端整合**：
-
-    - [x] 連接 Python FastAPI。
-
-    - [ ] 實作專案存檔/讀取 (Save/Load) 功能。
+* 本專案使用 **Low Poly** 風格模型以確保網頁效能。
+* 若需新增模型，請將 `.glb` 檔案放入 `frontend/public/models/`，並修改 `backend/main.py` 中的 `seed_catalog` 資料結構，重新執行 Seed API 即可。
 
 ---
+
+### Author
+
+* **張志晨 (Leroy)**
+* GitHub: [leroylion940511](https://www.google.com/search?q=https://github.com/leroylion940511)
