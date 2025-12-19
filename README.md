@@ -69,6 +69,10 @@
 # macOS (Homebrew)
 brew services start mongodb-community
 
+# Windows
+# 通常安裝後會自動在背景執行。
+# 若未啟動，請開啟「服務 (services.msc)」尋找 "MongoDB Server" 並點擊啟動。
+
 ```
 
 ### 2. 啟動後端伺服器
@@ -76,18 +80,40 @@ brew services start mongodb-community
 ```bash
 cd backend
 
-# 建立/啟用虛擬環境 (首次執行)
+# --- 步驟 A: 建立與啟用虛擬環境 (首次執行) ---
+
+# macOS / Linux:
 python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate
 
-# 安裝依賴 (首次執行)
+# Windows (PowerShell):
+python -m venv venv
+.\venv\Scripts\activate
+
+# --- 步驟 B: 安裝依賴 (首次執行) ---
 pip install -r requirements.txt
-# 或手動安裝: pip install fastapi "uvicorn[standard]" motor pydantic
 
-# 啟動伺服器 (Port: 8000)
+# --- 步驟 C: 啟動伺服器 (Port: 8000) ---
 uvicorn main:app --reload
 
 ```
+
+### 3. 啟動前端應用
+
+此步驟雙系統指令相同。
+
+```bash
+cd frontend
+
+# 安裝依賴 (首次執行)
+npm install
+
+# 啟動開發伺服器 (Port: 5173)
+npm run dev
+
+```
+
+> 網頁將運行於：[http://localhost:5173](http://localhost:5173)
 
 ### 3. 啟動前端應用
 
@@ -102,7 +128,7 @@ npm run dev
 
 ```
 
-> 網頁將運行於：[http://localhost:5173](https://www.google.com/search?q=http://localhost:5173)
+> 網頁將運行於：[http://localhost:5173](http://localhost:5173)
 
 ---
 
@@ -112,7 +138,7 @@ npm run dev
 剛啟動時，家具目錄可能是空的。請執行以下步驟將預設家具寫入資料庫：
 
 1. 確保後端 (`uvicorn`) 正在執行。
-2. 前往 API 文件頁面：[http://127.0.0.1:8000/docs](https://www.google.com/search?q=http://127.0.0.1:8000/docs)
+2. 前往 API 文件頁面：[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 3. 找到並展開 **POST** `/api/catalog/seed`。
 4. 點擊 **Try it out** -> **Execute**。
 5. 確認回傳 Code 為 **200**。
@@ -170,4 +196,4 @@ RoomCraft/
 ### Author
 
 * **張志晨 (Leroy)**
-* GitHub: [leroylion940511](https://www.google.com/search?q=https://github.com/leroylion940511)
+* GitHub: [leroylion940511](https://github.com/leroylion940511)
