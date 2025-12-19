@@ -32,7 +32,7 @@ export default function Sidebar() {
       id: 'cat-3',
       name: '🪑 真實椅子',
       type: 'model',
-      dimensions: [0.5, 1, 0.5],
+      dimensions: [1, 1, 1],
       modelUrl: '/chair.glb',
       color: '#ffffff'
     }
