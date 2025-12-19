@@ -2,6 +2,13 @@ import { create } from 'zustand'
 
 const useStore = create((set) => ({
   roomDimensions: { width: 10, length: 10 },
+  
+  // --- 新增：房間風格設定 (地板與牆壁顏色) ---
+  roomStyle: {
+    floorColor: '#555555', // 預設深灰地板
+    wallColor: '#f0f0f0',  // 預設米白牆壁
+  },
+
   furniture: [],
 
   updateFurniturePosition: (id, newPosition) => set((state) => ({
@@ -18,10 +25,14 @@ const useStore = create((set) => ({
 
   setFurniture: (newFurnitureList) => set({ furniture: newFurnitureList }),
 
-  // --- 新增：設定房間尺寸 ---
   setRoomDimensions: (width, length) => set({ 
     roomDimensions: { width, length } 
   }),
+
+  // --- 新增：設定房間風格的動作 ---
+  setRoomStyle: (newStyle) => set((state) => ({
+    roomStyle: { ...state.roomStyle, ...newStyle }
+  })),
 
   addFurniture: (itemConfig) => set((state) => {
     const { id, ...restConfig } = itemConfig;

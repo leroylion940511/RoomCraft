@@ -1,57 +1,66 @@
-import { Suspense } from 'react' // 1. 引入 Suspense
+import React, { Suspense } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Grid, Text, GizmoHelper, GizmoViewport, useGLTF, Gltf } from '@react-three/drei' // 2. 引入 useGLTF, Gltf
+import { OrbitControls, Grid, Text, GizmoHelper, GizmoViewport, Gltf, Environment, ContactShadows } from '@react-three/drei'
 import useStore from '../store'
-import { Environment } from '@react-three/drei'
 
-// 3. 修改 FurnitureItem：支援模型渲染
-function FurnitureItem({ position, color, dimensions, rotation, modelUrl}) { // 接收 modelUrl
+function FurnitureItem({ position, color, dimensions, rotation, modelUrl }) {
   if (!position || position.length < 3) return null;
   const args = dimensions || [1, 1, 1];
   const safeColor = color || 'white';
   const rotationY = (rotation || 0) * (Math.PI / 180) * -1;
 
   return (
-    <mesh position={position} rotation={[0, rotationY, 0]}>
-      {/* 判斷：如果有模型路徑，就顯示模型；否則顯示原本的方塊 */}
+    <group position={position} rotation={[0, rotationY, 0]}>
       {modelUrl ? (
-        // Gltf 是 drei 提供的便利組件，自動處理載入
-        // scale 這裡暫時設為 1，稍後可能需要根據 dimensions 調整
         <Gltf src={modelUrl} castShadow receiveShadow />
       ) : (
-        <>
+        <mesh castShadow receiveShadow>
           <boxGeometry args={args} />
           <meshStandardMaterial color={safeColor} />
-        </>
+        </mesh>
       )}
-    </mesh>
+    </group>
   )
 }
 
 function RoomLabels({ width, length }) {
   const padding = 1.5 
-  const textProps = {
-    fontSize: 0.8,
-    color: "white",
-    rotation: [-Math.PI / 2, 0, 0], 
-    anchorX: "center",
-    anchorY: "middle"
-  }
-
+  const textProps = { fontSize: 0.8, color: "white", rotation: [-Math.PI / 2, 0, 0], anchorX: "center", anchorY: "middle" }
   return (
     <group position={[0, 0.01, 0]}>
-      <Text position={[0, 0, length / 2 + padding]} {...textProps}>
-        Front (+Z)
-      </Text>
-      <Text position={[0, 0, -length / 2 - padding]} {...textProps}>
-        Back (-Z)
-      </Text>
-      <Text position={[-width / 2 - padding, 0, 0]} {...textProps} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>
-        Left (-X)
-      </Text>
-      <Text position={[width / 2 + padding, 0, 0]} {...textProps} rotation={[-Math.PI / 2, 0, -Math.PI / 2]}>
-        Right (+X)
-      </Text>
+      <Text position={[0, 0, length / 2 + padding]} {...textProps}>Front (+Z)</Text>
+      <Text position={[0, 0, -length / 2 - padding]} {...textProps}>Back (-Z)</Text>
+      <Text position={[-width / 2 - padding, 0, 0]} {...textProps} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>Left (-X)</Text>
+      <Text position={[width / 2 + padding, 0, 0]} {...textProps} rotation={[-Math.PI / 2, 0, -Math.PI / 2]}>Right (+X)</Text>
+    </group>
+  )
+}
+
+// --- 新增：牆壁組件 ---
+// 為了不擋住鏡頭，我們只畫「後牆 (-Z)」和「左牆 (-X)」
+function RoomWalls({ width, length, wallColor, height = 3 }) {
+  const thickness = 0.2; // 牆壁厚度 20cm
+  
+  return (
+    <group>
+      {/* 1. 後牆 (Back Wall) */}
+      <mesh 
+        position={[0, height / 2, -length / 2 - thickness / 2]} 
+        receiveShadow
+      >
+        {/* 寬度要稍微加寬一點點蓋住角落縫隙 */}
+        <boxGeometry args={[width + thickness, height, thickness]} />
+        <meshStandardMaterial color={wallColor} />
+      </mesh>
+
+      {/* 2. 左牆 (Left Wall) */}
+      <mesh 
+        position={[-width / 2 - thickness / 2, height / 2, 0]} 
+        receiveShadow
+      >
+        <boxGeometry args={[thickness, height, length]} />
+        <meshStandardMaterial color={wallColor} />
+      </mesh>
     </group>
   )
 }
@@ -59,19 +68,26 @@ function RoomLabels({ width, length }) {
 export default function View3D() {
   const furnitureList = useStore((state) => state.furniture)
   const roomDim = useStore((state) => state.roomDimensions)
+  // --- 新增：取得房間風格 ---
+  const roomStyle = useStore((state) => state.roomStyle)
 
   return (
     <div style={{ width: "100%", height: "100%" }}>
-      <Canvas camera={{ position: [8, 8, 8], fov: 50 }} shadows>
-        
-        {/* 4. 加入 Suspense：這是載入模型必須的，fallback 可以放個讀取條，這裡先設 null */}
+      <Canvas camera={{ position: [8, 12, 12], fov: 50 }} shadows>
         <Suspense fallback={null}>
-          <Environment preset="apartment" />
+          
           <color attach="background" args={['#1a1a1a']} />
           
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
-          
+          <Environment preset="apartment" />
+
+          <directionalLight 
+            position={[5, 10, 5]} 
+            intensity={1.5} 
+            castShadow 
+            shadow-mapSize={[2048, 2048]} 
+            shadow-bias={-0.001}
+          />
+
           <Grid 
             position={[0, -0.01, 0]} 
             args={[roomDim.width, roomDim.width]} 
@@ -86,8 +102,16 @@ export default function View3D() {
           
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
             <planeGeometry args={[roomDim.width, roomDim.length]} />
-            <meshStandardMaterial color="#2a2a2a" />
+            {/* --- 修改：使用 Store 裡的地板顏色 --- */}
+            <meshStandardMaterial color={roomStyle.floorColor} roughness={0.8} />
           </mesh>
+
+          {/* --- 新增：渲染牆壁 --- */}
+          <RoomWalls 
+            width={roomDim.width} 
+            length={roomDim.length} 
+            wallColor={roomStyle.wallColor} 
+          />
 
           <RoomLabels width={roomDim.width} length={roomDim.length} />
 
@@ -98,9 +122,11 @@ export default function View3D() {
               color={item.color} 
               dimensions={item.dimensions}
               rotation={item.rotation}
-              modelUrl={item.modelUrl}// 5. 傳遞 modelUrl
+              modelUrl={item.modelUrl} 
             />
           ))}
+
+          <ContactShadows position={[0, 0.01, 0]} opacity={0.5} scale={roomDim.width * 2} blur={2} far={1.5} />
           
           <OrbitControls makeDefault />
 

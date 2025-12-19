@@ -7,8 +7,11 @@ export default function Sidebar() {
   const removeFurniture = useStore((state) => state.removeFurniture)
   const furnitureList = useStore((state) => state.furniture)
   const roomDim = useStore((state) => state.roomDimensions)
-  // --- 新增：引入設定尺寸的動作 ---
   const setRoomDimensions = useStore((state) => state.setRoomDimensions)
+  
+  // --- 新增：取得與設定房間風格 ---
+  const roomStyle = useStore((state) => state.roomStyle)
+  const setRoomStyle = useStore((state) => state.setRoomStyle)
 
   const catalog = [
     {
@@ -44,6 +47,8 @@ export default function Sidebar() {
     const designData = {
       name: "我的房間設計",
       roomDimensions: roomDim,
+      // --- 新增：存檔時也要把顏色存起來 ---
+      roomStyle: roomStyle,
       furniture: furnitureList
     }
 
@@ -62,12 +67,15 @@ export default function Sidebar() {
       const data = await loadDesign()
       
       if (data && data.furniture) {
-        // --- 新增：讀檔時也要同步更新房間尺寸 ---
         if (data.roomDimensions) {
           setRoomDimensions(data.roomDimensions.width, data.roomDimensions.length)
         }
         
-        // --- 這裡呼叫 setFurniture 的動作 ---
+        // --- 新增：讀檔時同步更新風格 ---
+        if (data.roomStyle) {
+          setRoomStyle(data.roomStyle)
+        }
+        
         useStore.getState().setFurniture(data.furniture)
         
         alert(`📂 讀取成功！已載入 ${data.furniture.length} 個家具。`)
@@ -81,10 +89,9 @@ export default function Sidebar() {
     }
   }
 
-  // --- 新增：處理輸入框變更 ---
   const handleDimChange = (e, type) => {
     const val = parseFloat(e.target.value)
-    if (isNaN(val) || val <= 0) return // 簡單防呆
+    if (isNaN(val) || val <= 0) return 
 
     if (type === 'width') {
       setRoomDimensions(val, roomDim.length)
@@ -109,7 +116,6 @@ export default function Sidebar() {
         🏠 RoomCraft
       </h2>
 
-      {/* --- 新增：房間尺寸設定區 --- */}
       <div style={{ marginBottom: '20px', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '5px' }}>
         <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: '10px' }}>📏 房間尺寸 (公尺)</h3>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
@@ -129,6 +135,28 @@ export default function Sidebar() {
               value={roomDim.length} 
               onChange={(e) => handleDimChange(e, 'length')}
               style={{ width: '100%', padding: '5px', borderRadius: '3px', border: 'none', marginTop: '2px' }}
+            />
+          </div>
+        </div>
+
+        {/* --- 新增：材質顏色設定區 --- */}
+        <div style={{ display: 'flex', gap: '10px', marginTop: '10px', borderTop: '1px solid #555', paddingTop: '10px' }}>
+           <div style={{ flex: 1 }}>
+            <label style={{ fontSize: '0.8rem', color: '#bdc3c7' }}>地板色</label>
+            <input 
+              type="color" 
+              value={roomStyle.floorColor} 
+              onChange={(e) => setRoomStyle({ floorColor: e.target.value })}
+              style={{ width: '100%', height: '30px', border: 'none', padding: 0, cursor: 'pointer' }}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={{ fontSize: '0.8rem', color: '#bdc3c7' }}>牆壁色</label>
+            <input 
+              type="color" 
+              value={roomStyle.wallColor} 
+              onChange={(e) => setRoomStyle({ wallColor: e.target.value })}
+              style={{ width: '100%', height: '30px', border: 'none', padding: 0, cursor: 'pointer' }}
             />
           </div>
         </div>
@@ -239,7 +267,7 @@ export default function Sidebar() {
       </div>
 
       <div style={{ marginTop: 'auto', paddingTop: '10px', fontSize: '0.8rem', color: '#95a5a6', textAlign: 'center' }}>
-        RoomCraft Alpha v0.2
+        RoomCraft Alpha v0.3
       </div>
     </div>
   )
