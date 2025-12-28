@@ -138,51 +138,105 @@ async def seed_catalog():
     # 預設家具資料
     initial_data = [
         {
-            "id": "item-bed-001",
-            "name": "雙人軟床",
+            "id": "item-armchair-001",
+            "name": "單人扶手椅",
             "type": "model",
-            "dimensions": [1.8, 0.5, 2.0],
-            "modelUrl": "/models/bed.glb",
+            "dimensions": [0.8, 0.9, 0.8],
+            "modelUrl": "/models/Armchair.glb",
             "color": "#ffffff",
-            "category": "bedroom"
-        },
-        {
-            "id": "item-sofa-001",
-            "name": "L型沙發",
-            "type": "model",
-            "dimensions": [2.5, 0.8, 1.5],
-            "modelUrl": "/models/sofa.glb",
-            "color": "#cccccc",
             "category": "living_room"
         },
         {
-            "id": "item-table-001",
-            "name": "原木餐桌",
+            "id": "item-couch-001",
+            "name": "三人長沙發",
             "type": "model",
-            "dimensions": [1.6, 0.75, 0.9],
-            "modelUrl": "/models/table.glb",
-            "color": "#8b4513",
+            "dimensions": [2.2, 0.8, 0.9],
+            "modelUrl": "/models/Couch.glb",
+            "color": "#ffffff",
+            "category": "living_room"
+        },
+        {
+            "id": "item-desk-001",
+            "name": "簡約辦公桌",
+            "type": "model",
+            "dimensions": [1.4, 0.75, 0.7],
+            "modelUrl": "/models/Desk.glb",
+            "color": "#ffffff",
+            "category": "office"
+        },
+        {
+            "id": "item-refrigerator-001",
+            "name": "家用冰箱",
+            "type": "model",
+            "dimensions": [0.7, 1.8, 0.7],
+            "modelUrl": "/models/Refrigirator.glb",
+            "color": "#ffffff",
+            "category": "kitchen"
+        },
+        {
+            "id": "item-table-circular-001",
+            "name": "大圓餐桌",
+            "type": "model",
+            "dimensions": [1.5, 0.75, 1.5],
+            "modelUrl": "/models/Table Large Circular.glb",
+            "color": "#ffffff",
             "category": "dining"
         },
         {
+            "id": "item-table-001",
+            "name": "標準長餐桌",
+            "type": "model",
+            "dimensions": [1.6, 0.75, 0.9],
+            "modelUrl": "/models/Table.glb",
+            "color": "#ffffff",
+            "category": "dining"
+        },
+        {
+            "id": "item-trash-bin-001",
+            "name": "不鏽鋼垃圾桶",
+            "type": "model",
+            "dimensions": [0.4, 0.6, 0.4],
+            "modelUrl": "/models/Trash Bin.glb",
+            "color": "#ffffff",
+            "category": "general"
+        },
+        {
+            "id": "item-treadmill-001",
+            "name": "健身跑步機",
+            "type": "model",
+            "dimensions": [1.0, 1.3, 2.0],
+            "modelUrl": "/models/Treadmill.glb",
+            "color": "#ffffff",
+            "category": "gym"
+        },
+        {
+            "id": "item-chair-001",
+            "name": "簡約靠背椅",
+            "type": "model",
+            "dimensions": [0.5, 0.9, 0.5],
+            "modelUrl": "/models/chair.glb",
+            "color": "#ffffff",
+            "category": "living_room"
+        },
+        {
+            "id": "item-chair-002",
+            "name": "豪門辦公椅",
+            "type": "model",
+            "dimensions": [0.7, 1.2, 0.7],
+            "modelUrl": "/models/Executive Chair.glb",
+            "color": "#333333",
+            "category": "office"
+        },
+        {
             "id": "item-plant-001",
-            "name": "室內盆栽",
+            "name": "室內盆栽 (方塊)",
             "type": "box",
             "dimensions": [0.4, 1.2, 0.4],
             "modelUrl": None,
             "color": "#27ae60",
             "category": "decoration"
-        },
-        {
-            "id": "item-box-001",
-            "name": "測試方塊",
-            "type": "box",
-            "dimensions": [1, 1, 1],
-            "modelUrl": None,
-            "color": "#ffaa00",
-            "category": "general"
         }
     ]
     
     await collection_catalog.insert_many(initial_data)
-    return {"message": "✅ 家具目錄已重置並寫入 MongoDB！"}
+    return {"message": "✅ 家具目錄已更新為最新上傳的模型！"}

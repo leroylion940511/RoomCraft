@@ -2,12 +2,12 @@ import React, { useRef, useState } from 'react'
 import { Stage, Layer, Rect, Text, Line, Group } from 'react-konva'
 import useStore from '../store'
 
-const SCALE = 50 
+const SCALE = 50
 
 export default function Editor2D() {
   const furnitureList = useStore((state) => state.furniture)
   const roomDim = useStore((state) => state.roomDimensions)
-  
+
   const updatePos = useStore((state) => state.updateFurniturePosition)
   const updateRot = useStore((state) => state.updateFurnitureRotation)
 
@@ -19,13 +19,13 @@ export default function Editor2D() {
   const roomPixelWidth = roomDim.width * SCALE
   const roomPixelLength = roomDim.length * SCALE
 
-  const dragStartRef = useRef(null) 
+  const dragStartRef = useRef(null)
   const [collidingIds, setCollidingIds] = useState([])
 
   const getBox = (item, customPos = null, customRot = null) => {
     const pos = customPos || item.position
     const rot = (customRot !== null) ? customRot : (item.rotation || 0)
-    
+
     const isRotated = (Math.abs(rot / 90) % 2) === 1
     const w = isRotated ? item.dimensions[2] : item.dimensions[0]
     const l = isRotated ? item.dimensions[0] : item.dimensions[2]
@@ -44,7 +44,7 @@ export default function Editor2D() {
     const tBox = getBox(targetItem, customPos, customRot)
 
     for (let item of allItems) {
-      if (item.id === targetItem.id) continue 
+      if (item.id === targetItem.id) continue
 
       const iBox = getBox(item)
 
@@ -55,9 +55,9 @@ export default function Editor2D() {
         tBox.bottom > iBox.top
       )
 
-      if (isOverlapping) return item 
+      if (isOverlapping) return item
     }
-    return null 
+    return null
   }
 
   const findNearestValidPosition = (targetItem, collidedItem) => {
@@ -117,12 +117,12 @@ export default function Editor2D() {
           <Group x={CENTER_X} y={CENTER_Y}>
             <Rect x={-roomPixelWidth / 2} y={-roomPixelLength / 2} width={roomPixelWidth} height={roomPixelLength} fill="white" shadowColor="black" shadowBlur={10} shadowOpacity={0.5} />
             {renderGrid()}
-            
-            <Line points={[-roomPixelWidth/2, 0, roomPixelWidth/2, 0]} stroke="red" strokeWidth={2} opacity={0.3} />
-            <Line points={[0, -roomPixelLength/2, 0, roomPixelLength/2]} stroke="blue" strokeWidth={2} opacity={0.3} />
+
+            <Line points={[-roomPixelWidth / 2, 0, roomPixelWidth / 2, 0]} stroke="red" strokeWidth={2} opacity={0.3} />
+            <Line points={[0, -roomPixelLength / 2, 0, roomPixelLength / 2]} stroke="blue" strokeWidth={2} opacity={0.3} />
 
             {furnitureList.map((item) => {
-              const dims = item.dimensions || [1, 1, 1] 
+              const dims = item.dimensions || [1, 1, 1]
               const itemWidth = dims[0] * SCALE
               const itemLength = dims[2] * SCALE
               const isColliding = collidingIds.includes(item.id)
@@ -132,9 +132,9 @@ export default function Editor2D() {
                   key={item.id}
                   x={item.position[0] * SCALE}
                   y={item.position[2] * SCALE}
-                  rotation={item.rotation || 0} 
+                  rotation={item.rotation || 0}
                   draggable
-                  
+
                   onDragStart={() => {
                     dragStartRef.current = { ...item.position }
                   }}
@@ -143,33 +143,57 @@ export default function Editor2D() {
                   onDblClick={() => {
                     const currentRotation = item.rotation || 0
                     const newRotation = (currentRotation + 90) % 360
-                    
-                    // 1. 建立一個「旋轉後」的暫存物件
-                    const tempItem = { ...item, rotation: newRotation }
-                    
-                    // 2. 檢查如果轉過去會不會撞到
+
+                    // 1. 檢查旋轉後是否超出房間邊界
+                    const isRotated = (Math.abs(newRotation / 90) % 2) === 1
+                    const rotatedW = isRotated ? item.dimensions[2] : item.dimensions[0]
+                    const rotatedL = isRotated ? item.dimensions[0] : item.dimensions[2]
+
+                    let newX = item.position[0]
+                    let newZ = item.position[2]
+
+                    const minX = -roomDim.width / 2 + rotatedW / 2
+                    const maxX = roomDim.width / 2 - rotatedW / 2
+                    const minZ = -roomDim.length / 2 + rotatedL / 2
+                    const maxZ = roomDim.length / 2 - rotatedL / 2
+
+                    // 如果超出邊界，推移回房內
+                    newX = Math.max(minX, Math.min(maxX, newX))
+                    newZ = Math.max(minZ, Math.min(maxZ, newZ))
+
+                    // 2. 建立一個「旋轉並修正位置後」的暫存物件
+                    const tempItem = { ...item, rotation: newRotation, position: [newX, item.position[1], newZ] }
+
+                    // 3. 檢查如果轉過去會不會撞到其他家具
                     const collidedTarget = checkCollision(tempItem, furnitureList)
 
                     if (collidedTarget) {
                       console.log("旋轉撞擊！自動彈開...")
-                      // 3. 如果撞到，計算彈開後的新位置 (使用旋轉後的 tempItem 來算)
-                      const newPos = findNearestValidPosition(tempItem, collidedTarget)
-                      
-                      // 4. 同時更新「旋轉」與「位置」
-                      updateRot(item.id, newRotation)
-                      updatePos(item.id, newPos)
+                      const finalPos = findNearestValidPosition(tempItem, collidedTarget)
 
-                    } else {
-                      // 5. 沒撞到，就只是單純旋轉
+                      // 再次確保彈開後不會出牆 (極端狀況)
+                      const safeX = Math.max(minX, Math.min(maxX, finalPos[0]))
+                      const safeZ = Math.max(minZ, Math.min(maxZ, finalPos[2]))
+
                       updateRot(item.id, newRotation)
+                      updatePos(item.id, [safeX, finalPos[1], safeZ])
+                    } else {
+                      // 沒撞到且邊界已修正
+                      updateRot(item.id, newRotation)
+                      updatePos(item.id, [newX, item.position[1], newZ])
                     }
                   }}
 
                   dragBoundFunc={(pos) => {
-                    const minX = CENTER_X - (roomPixelWidth / 2) + (itemWidth / 2)
-                    const maxX = CENTER_X + (roomPixelWidth / 2) - (itemWidth / 2)
-                    const minY = CENTER_Y - (roomPixelLength / 2) + (itemLength / 2)
-                    const maxY = CENTER_Y + (roomPixelLength / 2) - (itemLength / 2)
+                    // 根據旋轉角度決定實際寬高
+                    const isRotated = (Math.abs((item.rotation || 0) / 90) % 2) === 1
+                    const currentW = (isRotated ? item.dimensions[2] : item.dimensions[0]) * SCALE
+                    const currentL = (isRotated ? item.dimensions[0] : item.dimensions[2]) * SCALE
+
+                    const minX = CENTER_X - (roomPixelWidth / 2) + (currentW / 2)
+                    const maxX = CENTER_X + (roomPixelWidth / 2) - (currentW / 2)
+                    const minY = CENTER_Y - (roomPixelLength / 2) + (currentL / 2)
+                    const maxY = CENTER_Y + (roomPixelLength / 2) - (currentL / 2)
                     return {
                       x: Math.max(minX, Math.min(maxX, pos.x)),
                       y: Math.max(minY, Math.min(maxY, pos.y))
@@ -181,22 +205,23 @@ export default function Editor2D() {
                     const y = e.target.y()
                     const x3d = x / SCALE
                     const z3d = y / SCALE
-                    
-                    updatePos(item.id, [x3d, 0.5, z3d])
 
-                    const tempItem = { ...item, position: [x3d, 0.5, z3d] }
+                    const h3d = (item.dimensions ? item.dimensions[1] : 1) / 2
+                    updatePos(item.id, [x3d, h3d, z3d])
+
+                    const tempItem = { ...item, position: [x3d, h3d, z3d] }
                     const collidedTarget = checkCollision(tempItem, furnitureList)
 
                     if (collidedTarget) {
-                       if (!collidingIds.includes(item.id)) setCollidingIds([...collidingIds, item.id])
+                      if (!collidingIds.includes(item.id)) setCollidingIds([...collidingIds, item.id])
                     } else {
-                       if (collidingIds.includes(item.id)) setCollidingIds(collidingIds.filter(id => id !== item.id))
+                      if (collidingIds.includes(item.id)) setCollidingIds(collidingIds.filter(id => id !== item.id))
                     }
                   }}
 
                   onDragEnd={() => {
                     const collidedTarget = checkCollision(item, furnitureList)
-                    
+
                     if (collidedTarget) {
                       console.log("拖曳撞擊，彈回最近邊緣")
                       const newPos = findNearestValidPosition(item, collidedTarget)
@@ -209,7 +234,7 @@ export default function Editor2D() {
                   }}
                 >
                   <Rect
-                    width={itemWidth} 
+                    width={itemWidth}
                     height={itemLength}
                     fill={item.color}
                     stroke={isColliding ? "red" : "#333"}
